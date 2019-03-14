@@ -1,0 +1,2 @@
+all: main_omp.c lab1_io.c lab1_omp.cpp function.cpp
+	g++ -o ompPral -fopenmp main_omp.c lab1_io.c lab1_omp.cpp function.cpp -I.

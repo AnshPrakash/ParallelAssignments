@@ -1,0 +1,92 @@
+HomeWork1
+COL380 Parallel programming
+
+
+
+
+Problem 1
+
+In case of SIMD machine the two of the core will remain ideal at any given time,where as in MIMD machine all the core will be doing there
+jobs.
+1 instrc cycle=1ns(1GHz PU)
+Expected latency =0.99*1+0.01*100=1.99ns~2ns=2 instrc cycles
+produceItem() takes 20 instruc cycle +2 cycle(read/write operation) ~=22 instruc cycle
+consumeItem() take 25 instruc cycle + 2 cycle(read/write operation) ~=27 instruc cycle
+
+SIMD Model:
+	2 PU will run produceItem() in parallel and 2PU will remain ideal then
+	2 PU will run consumeItem() in parallel and 2PU will remain ideal then
+	So,
+	total instruc cylcle =22 instruc cycle + 27 instruc cycle=49 instruc cycle.
+MIMD Model:
+	All 4 PU will work together in parallel.
+	2 PU will run produceItem() in parallel and 2 PU will run consumeItem() in parallel 
+	total cycle=max(22 instruc cycle,27 instruc cycle)=27 instruc cycle
+
+Performance comparsion:
+	(SIMD instru cycle)/(MIMD instuc cycle)=49/27=1.81
+	SIMD reqiures 1.81 more instruction cycles than MIMD to execute this same Code.
+
+Problem 2
+Only case when regular register behave differently from atomic register is in case when there is a write and multiple
+read overlaps, where read from the same thread can be reading old and new value of the register in any order.
+So, we will see this case in peterson's alogorithm when one threadA writes to flag(A) and threadB reads in flag(A) in while 
+loop condition.
+So,let say threadA  is writing to flag(A)=true at same time threadB is reading flag(A):
+1.If threadB reads false it will enter the CS and threadA will keep spining the loop.
+2.If thread B reads true it will keep spining.
+(i)Now when it reads agains  while threadA is still writing it may read true or false.If it reads false it will be the same case as 1
+ else it again spin.
+ (ii)Now when it reads agains  while threadA is over writing then it is the same argument as for atomic registers.
+
+ Eventually threadB will get the CS either because of case1 or write get over then no matter what all the threads are going to read flag(A or B)=True 
+because Wi->Wj->Ri is not possible then arugment for correction is same as for the atomic flag register.
+Diagram:
+thA:     <----wA(flag(A)=True)---->
+thB:<--rd(flag(A))-->  <--rd(flag(A))--->
+
+
+
+Problem 3 
+
+
+Problem 4
+
+According to sequential consistency we should account for the final result of the execution which says that if we can find a 
+sequential execution of that execution such that it satisfies the sequential specification of the object,it is correct.
+We can reorder the method calls of different thread but for a single thread it should follow the program order.
+Since we can reorder the method call to account for the final execution of the result none of the thread have to block any other therad
+,therefore the sequential consistency is non-blocking.
+
+
+
+Problem 5
+
+
+For 2-thread system object is not Linearisable.
+Consider the case
+th1:enq(x)->deq(y)->deq(z)
+th2:eny(y)
+Here both the thread run simulataneouly  for enq(x) and enq(y) 
+th1 execute line8 of the code then just after that th2 execute line8 of the code and then both increases tail by 1(total increase is 2)
+Now what has happen here is that th2 has overwritten the entry of th1 and z is some garbage value.
+No matter what but deq(z) can not be justified.
+Hence this Queue Implementaion is NOT Linearisable.
+
+Problem 6
+
+
+According to me Lock2 to give better performance than Lock1.Here by performance I mean how fast
+does it realease the lock as soon as the critical section become available.
+
+As we know getAndSet() is atomic function.
+So,once any function calls getAndSet other threads can't call it.
+
+When we closely compare Lock1 and Lock2 we notice that once a thread wants to realease the crtical section it has
+to wait for the other threads who are calling getAndSet function and then only get its turn.
+In Lock1 every thread running the loop keep calling the getAndSet function and hence not letting the thread currently occupying the CS
+ to unlock, whereas in Lock2 first all the threads stuck in inner while loop which calls get() function(not atomic) and hence thread and instantaniously unlock the critical section then other threads can compete to get the critical section and first one to execute set the state equals to true gets into the critical section. 
+
+
+
+

@@ -1,0 +1,2 @@
+all: main_sequential.c lab1_io.c lab1_sequential.cpp function.cpp
+	g++ -o seq main_sequential.c lab1_io.c lab1_sequential.cpp function.cpp -I.

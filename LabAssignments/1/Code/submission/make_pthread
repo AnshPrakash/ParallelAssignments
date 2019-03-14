@@ -1,0 +1,2 @@
+all: main_pthread.c lab1_io.c lab1_pthread.cpp function.cpp
+	g++ -o pthParl -fopenmp -pthread main_pthread.c lab1_io.c lab1_pthread.cpp function.cpp -I.
