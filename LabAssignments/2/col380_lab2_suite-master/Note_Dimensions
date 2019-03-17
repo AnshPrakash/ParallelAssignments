@@ -1,0 +1,6 @@
+D :M X N
+D_T :N X M
+D_Hat: M X k
+U :N X N
+Sigma: N X M (only diagonal elements are stored aray of size N)
+V_T : M X M
