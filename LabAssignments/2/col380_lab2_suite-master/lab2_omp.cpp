@@ -83,8 +83,12 @@ void matmul(float* A,float* B,float* res,int a_m,int a_n,int b_m,int b_n){
 }
 
 
-bool converge(){
-	return false;
+bool converge(float* delta,int N){
+	float epsilon=0.000001;
+	float* max_value= std::max_element(delta,delta+N);
+	if ((*max_value)>epsilon)
+		return false;
+	return true;
 }
 
 // /*
@@ -101,12 +105,19 @@ void SVD(int M, int N, float* D, float** U, float** SIGMA, float** V_T){
 	float* E=(float*)(malloc(sizeof(float)*N*N));
 	float* Q=(float*)(malloc(sizeof(float)*N*N));
 	float* R=(float*)(malloc(sizeof(float)*N*N));
+	float* delta=(float*)(malloc(sizeof(float)*N));
+	float* res=(float*)(malloc(sizeof(float)*N*N));//temp var
+	for (int i = 0; i < N; ++i)	{
+		delta[i]=10000;
+	}
 	matmul(D_T,D,A,N,M,M,N);
-	while(!converge()){
+	while(!converge(delta,N)){
 		QRfactorisations(A,Q,R,N);
 		matmul(R,Q,A,N,N,N,N);
-		float* res=(float*)(malloc(sizeof(float)*N*N));
 		matmul(E,Q,res,N,N,N,N);
+		for (int i = 0; i < N; ++i)	{
+			delta[i]=fabs(E[N*i+i]-res[N*i+i]);
+		}
 		E=res;
 	}
 	for (int i = 0; i < N; ++i){
