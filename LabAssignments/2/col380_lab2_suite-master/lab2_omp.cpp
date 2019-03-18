@@ -230,14 +230,14 @@ void SVD(int M, int N, float* D, float** U, float** SIGMA, float** V_T){
 // */
 void PCA(int retention, int M, int N, float* D, float* U, float* SIGMA, float** D_HAT, int *K){
     float* total =(float*)malloc(sizeof(float)*N);
-    total[0]=SIGMA[0];
+    total[0]=SIGMA[0]*SIGMA[0];
     for (int i = 1; i < N; ++i){
-    	total[i]=SIGMA[i]+total[i-1];
+    	total[i]=SIGMA[i]*SIGMA[i]+total[i-1];
     }
     *K=0;
     for (int i = 0; i <N; ++i){
     	*K=1+*K;
-    	if (total[i]/total[N-1]>= retention){
+    	if ((total[i]/total[N-1])*100>= retention){
     		break;
     	}
     }
