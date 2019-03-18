@@ -58,6 +58,7 @@ float inner_product_rv(float* v1,float* v2,int n){
 }
 
 void transpose(float* A,float* A_T,int m,int n){
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i < m; ++i){
 		for (int j = 0; j < n; ++j)	{
 			A_T[m*j+i]=A[n*i+j];
@@ -76,11 +77,12 @@ void QRfactorisations(float* A,float* Q,float* R,int n){
 	transpose(A,V_T,n,n);
 	// print_matrix(V_T,n,n);
 	float* Q_T=(float*)(malloc(sizeof(float)*n*n));
-	for (int i=0 ; i<n ; i++){
+	for (int i=0 ; i<n ; i++){	
 		R[n*i+i]=norm_row_vec(V_T+n*i,n);//R[i][i]
 		for(int j=0;j<n;j++){
 			Q_T[n*i+j] = V_T[n*i+j]/R[n*i+i];//R[i][i]
 		}
+		#pragma omp parallel for
 		for (int j=i+1;j<n;j++){
 			R[n*i+j] = inner_product_rv(Q_T+n*i,V_T+n*j,n);
 			for(int k=0;k<n;k++){
@@ -94,6 +96,7 @@ void QRfactorisations(float* A,float* Q,float* R,int n){
 }
 
 void matmul(float* A,float* B,float* res,int a_m,int a_n,int b_m,int b_n){
+	#pragma omp parallel for collapse(2)
 	for(int i=0;i<a_m;i++){
 		for(int j=0;j<b_n;j++){
 			res[b_n*i+j]=0;
@@ -106,7 +109,7 @@ void matmul(float* A,float* B,float* res,int a_m,int a_n,int b_m,int b_n){
 
 
 bool converge(float* delta,int N){
-	float epsilon=0.000001;
+	float epsilon=0.0001;
 	float* max_value= std::max_element(delta,delta+N);
 	if ((*max_value)>epsilon)
 		return false;
@@ -242,7 +245,17 @@ void PCA(int retention, int M, int N, float* D, float* U, float* SIGMA, float** 
     	}
     }
     *D_HAT=(float*)malloc(sizeof(float)*M*(*K));
-    matmul(D,U,(*D_HAT),M,N,N,*K);
+    float* U_temp=(float*)malloc(sizeof(float)*N*(*K));
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < N; ++i){
+    	for (int j = 0; j < (*K); ++j){
+    		U_temp[(*K)*i+j]=U[N*i+j];
+    	}
+    }
+
+    matmul(D,U_temp,(*D_HAT),M,N,N,*K);
+
 
 
     // std::cout<<"U\n";
