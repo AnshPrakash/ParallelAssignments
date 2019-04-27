@@ -25,6 +25,7 @@
             | pattern[0] | pattern[1] | ... | pattern[num_patterns-1] |
             -----------------------------------------------------------
 */
+
 void read_data (
         const char* input_filename, 
         int *n, 
@@ -53,6 +54,7 @@ Arguments:
             -------------------------------------------------------------------------------------------------
     computation_time : Time elapsed in computing periodic pattern matching
 */
+
 void write_result (
         int *match_counts, 
         int *matches, 
