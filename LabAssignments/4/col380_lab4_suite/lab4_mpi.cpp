@@ -1,5 +1,6 @@
+#include <bits/stdc++.h> 
 #include "lab4_mpi.h"
-
+#include <string.h> 
 #include <malloc.h>
 #include "mpi.h"
 #include <iostream> 
@@ -21,10 +22,10 @@ void print_array(int* arr,int n){
 // Witness Function
 int* Witness(char* Y,int p,int m){
 	int pi = min(p,int(ceil(float(m)/2)));
-	int* witness_array =(int*)malloc(sizeof(int)*pi);
+	int* witness_array = (int*)calloc(pi,sizeof(int));
 	witness_array[0] = 0;
 	for(int i = 1;i<pi;i++){
-		for(int k = 0;k<m;k++){
+		for(int k = 0;k<m-i;k++){
 			if(Y[k]!=Y[i+k]){
 				witness_array[i] = k;
 				break;
@@ -44,8 +45,8 @@ int Duel(char* Z,int n,char* Y,int m,int* witness_array,int i,int j){
 
 bool pat_in_str(char* text,int n,char* pattern , int m,int pos){
 	int j = 0;
-	for(int i = pos; j<m ; i++){
-		if(i>=n || text[i]!=pattern[j]) return(false);
+	for(int i = pos;i<n,j<m ; i++){
+		if(text[i]!=pattern[j]) return(false);
 		j++;
 	}
 	return(true);
@@ -60,6 +61,7 @@ set<int> np_text_analysis(char* text,int n,char* pattern,int m,int* witness_arra
 	int i;
 	int last;
 	int potential_position[blocks];
+	// cout<<"blocks "<<blocks<<"\n"; 
 	for(int bi = 0;bi<blocks;bi++){
 		i = (bi)*p;
 		last = (bi + 1)*p;
@@ -77,15 +79,17 @@ set<int> np_text_analysis(char* text,int n,char* pattern,int m,int* witness_arra
 		i = potential_position[bi];
 		if(pat_in_str(text,n,pattern,m,i)){
 			match_positions.insert(i);
+			// cout<< i <<" ";
 		}
 	}
+	// cout<<"\n";
 	return(match_positions);
 }
 
 char* getsubstring(char* text, int n, int i, int j){
 	//returns the substing starting at i and ending at j-1
 	char* substr = (char*)(malloc(sizeof(char)*(j-i)));
-	for(int k = 0 ; i < (j-i) ; k++){
+	for(int k = 0 ; k < (j-i) ; k++){
 		substr[k] = text[i+k];
 	}
 	return(substr);
@@ -105,15 +109,21 @@ char* generate(char* u, int l1, int k, char* v, int l2){
 }
 
 
-bool check_cons_ones(vector<int> v,int start,int num){
-	int count = 0;
-	for(int i = start;i<v.size();i++){
-		if(v[i]!=1) break;
-		count++;
-		if(count == num) return(true);
-	}
-	return(false);
+vector<int> check_cons_ones(vector<int> si,int num){
+	vector<int> v(si.size());
 
+	int count =0;
+	// cout<<"num "<<num<<"\n";
+	for (int i = si.size()-1; i >=0; --i){
+		// cout<<"si" <<si[i]<<" ";
+		if(si[i]==1) count++;
+		else count = 0;
+		// cout<<count<<"count"<<" ";
+		if(count >= num ) v[i] = 1;
+		else v[i] = 0;
+	}
+	// cout<<"\n";
+	return(v);
 }
 
 bool somecondition(int j,int p){
@@ -128,47 +138,74 @@ vector<int> p_text_analysis(char* text,int n, char* pattern ,int m,int p){
 	char* p_dash;
 	p_dash = getsubstring(pattern,m,0,2*p-1);
 	int* witness_array = Witness(p_dash,p,(2*p -1));
+
 	int pi = p;//which is alway p = min(p,ceil(float(2*p -1)/2));
 	set<int> pos = np_text_analysis(text,n,p_dash,2*p-1,witness_array,pi);
 	char* u = getsubstring(pattern,n,0,p);
+	
+	
+
 	int k = m/p;
 	char* v = getsubstring(pattern,n,k*p,m);//till m-1
+
+	
+
+
 	char* u2v = generate(u,p,2,v,(m- k*p));
 	int* M = (int*)(malloc(sizeof(int)*n));
+	
+	// for(int l =0;l<2*p+(m - k*p);l++){
+		// cout<<u2v[l];
+	// }
+	// cout<<"\n";
+
+	// cout<<"ps.count "<<pos.count(1)<<"\n";
+	// cout<<"bool "<< pat_in_str(text,n,u2v,(2*p+(m-k*p)),1) <<"\n";
 	for(int i = 0;i<n;i++){
 		M[i] = 0;
-		if(pos.count(i) && pat_in_str(text,n,u2v,(2*p+(m-k*p)),i)){
+		if(pos.count(i) && pat_in_str(text,n,u2v,(2*p+(m-k*p)),i) ){
 			M[i] = 1;
 		}
+		// cout<<"M["<<i<<"]"<<M[i]<<" " ;
 	}
-	vector<vector<int>> C(p) ;
+	// cout<<"\n";
+	// cout<<"k "<<k<<"\n";
+	vector<vector<int>> C(p);
 	for (int i = 0; i < p; ++i){
 		vector<int> Si;
-		int k = 0;
-		while(i+k*p<n){
-			Si.push_back(M[i+k*p]);
-			k++;
+		int e = 0;
+		while(i+e*p<n){
+			Si.push_back(M[i+e*p]);
+			e++;
 		}
-		vector<int> ci(Si.size());
-		for(int j = 0 ;Si.size();j++){
-			ci[j] = 0;
-			if( check_cons_ones(Si,j,k-1)){
-				ci[j] = 1;
-			}
-		}
-		C[i] = ci;
+		C[i] = check_cons_ones(Si,k-1);
+		
+		// vector<int> ci(Si.size());
+		// vector<int> conse_ones =check_cons_ones(Si,k-1) ;
+		// for (int z  = 0; z < Si.size(); ++z){
+		// 	cout<<"Consecutive ["<<z<<"]"<<conse_ones[z]<<" ";
+		// }
+		// cout<<"\n";
+		// for (int z = 0; z <  Si.size() ; ++z){
+		// 	cout<<"S["<<z<<"] "<<Si[z]<<" " ;
+		// }
+		// cout<<"\n";
+		// for (int z = 0; z <  C[i].size() ; ++z){
+		// 	cout<<"C["<<z<<"] "<<C[i][z]<<" " ;
+		// }
+		// cout<<"\n";
+			
 	}
-	vector<int> MATCH(n-m); //= (int*)(malloc(sizeof(int)*(n-m)));
+	vector<int> MATCH;
 	for(int j = 0;j <n-m +1;j++){
 		if(somecondition(j,p)){
 			int i = j%p;
 			int l = j/p;
-			MATCH[j] = C[i][l];
+			if(C[i][l]) MATCH.push_back(j);
 		}
 	}
 	return(MATCH);
 }
-
 
 // /*
 // 	*****************************************************
@@ -183,6 +220,8 @@ void periodic_pattern_matching (int n,
 								char **pattern_set,
 								int **match_counts, 
 								int **matches){
+
+	
 
 	*match_counts = (int*)(malloc(sizeof(int)*num_patterns));
 	int total = 0;

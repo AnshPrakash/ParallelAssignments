@@ -28,13 +28,13 @@ import string
 import re
 
 # adjust these parameters to generate testcases
-n            = 102    # length of text
-num_patterns = 10       # number of patterns to be searched
+n            = 1000000000    # length of text
+num_patterns = 10000       # number of patterns to be searched
 min_p        = 2        # minimum period length
 min_m        = 5        # minimum pattern length
 num_chars	 = 26		# number of different characters in text and patterns,
 						# can't be more than 26
-max_m		 = 100		# maximum length of patterns, can be upto n
+max_m		 = 10000		# maximum length of patterns, can be upto n
 
 def randomString(stringLength):
     """Generate a random string of fixed length """
