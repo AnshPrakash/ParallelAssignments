@@ -220,29 +220,144 @@ void periodic_pattern_matching (int n,
 								char **pattern_set,
 								int **match_counts, 
 								int **matches){
+	
+	int total_processes;
+	MPI_Comm_size(MPI_COMM_WORLD, &total_processes);
+
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	vector<vector<int>> local_matches;
+	int start = (rank)*(num_patterns/(total_processes));
+	int last = (rank+1)*(num_patterns/(total_processes));
+	if (rank == total_processes-1) last = num_patterns;
+	int local_size = 0;
+	int local_pat_mat = 0;
+	for(int i = start; i < last; i++){
+		char* pattern;
+		pattern =pattern_set[i];
+		int p = p_set[i];
+		local_size += 1;
+		local_matches.push_back(p_text_analysis(text,n,pattern,m_set[i],p));
+		local_pat_mat += local_matches[local_matches.size() -1].size();
+		// cout<<"loc "<< local_matches[local_matches.size() -1].size()<<"\n";
+	}
 
 	
+	int* data_in_each_process = (int*)(malloc(sizeof(int)*total_processes));
+	int* matches_in_each_processes = (int*)(malloc(sizeof(int)*total_processes));
+	(*match_counts)	= (int*)(malloc(sizeof(int)*num_patterns));
 
-	*match_counts = (int*)(malloc(sizeof(int)*num_patterns));
-	int total = 0;
-	vector<vector<int>> Match_bufer(num_patterns);
-	for(int i = 0;i<num_patterns;i++){
-		char* pattern =(char*)(malloc(sizeof(char)*m_set[i])) ;
-		int p = p_set[i];
-		for(int j =0;j<m_set[i];j++){
-			pattern[j] = (*pattern_set)[i*m_set[i]+j];
-		}
-		Match_bufer[i] =  p_text_analysis(text,n,pattern,m_set[i],p);
-		(*match_counts)[i] = Match_bufer[i].size();
-		total += Match_bufer[i].size();
-		free(pattern);
+	int* local_match_count = (int*)(malloc(sizeof(int)*local_size));
+	for (int i = 0; i < local_matches.size(); ++i){
+		local_match_count[i] = local_matches[i].size();
 	}
-	(*matches) = (int*)(malloc(sizeof(int)*total));
-	int k = 0;
-	for (int i = 0; i < num_patterns; ++i){
-		for (int j = 0; j < Match_bufer[i].size(); ++j){
-			(*matches)[k] = Match_bufer[i][j];
-			k++;
+	
+	// cout<<"my rank "<<rank<<" local_size "<<local_size<<"\n";
+	MPI_Gather(&local_size, 1, MPI_INT, data_in_each_process , 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Gather(&local_pat_mat, 1, MPI_INT,matches_in_each_processes, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	
+
+	int* offsets;
+	if(rank == 0){
+		offsets = (int*)(calloc(total_processes,sizeof(int)));
+		offsets[0] = 0;
+		for (int i = 1; i < total_processes; ++i){
+			offsets[i] = data_in_each_process[i-1] +offsets[i-1];
 		}
 	}
+
+	MPI_Gatherv(local_match_count,local_size,MPI_INT
+				,(*match_counts),data_in_each_process,offsets,MPI_INT,0,MPI_COMM_WORLD);
+
+	int* local_data_matches = (int*)(malloc(sizeof(int)*local_pat_mat));
+	int idx = 0;
+	for (int i = 0; i < local_matches.size() ; ++i){
+		for (int j= 0; j < local_matches[i].size(); ++j){
+			// cout<<"local_pat_mat "<<local_pat_mat<<" idx "<<idx<<"\n";
+			local_data_matches[idx] = local_matches[i][j];
+			idx++;
+		}
+	}
+	int* offsets2;
+	int size_of_matches = 0;
+	if(rank == 0){
+		offsets2 = (int*)(calloc(total_processes,sizeof(int)));
+		offsets2[0] = 0;
+		for (int i = 1; i < total_processes; ++i){
+			offsets2[i] = matches_in_each_processes[i-1] +offsets2[i-1];
+		}
+		for (int i = 0; i < total_processes; ++i){
+			size_of_matches += matches_in_each_processes[i];
+		}
+			
+	}
+
+	// cout<<"local_pat_mat "<<local_pat_mat<<"\n";
+	(*matches) =(int*)(malloc(sizeof(int)*size_of_matches));
+	MPI_Gatherv(local_data_matches,local_pat_mat,MPI_INT
+				,(*matches),matches_in_each_processes,offsets2,MPI_INT,0,MPI_COMM_WORLD);
+	
+
+
+	if (rank!=0){
+		free(data_in_each_process);
+		free(matches_in_each_processes);
+		free((*match_counts));
+		free((*matches));
+	}
+
+	// if (rank == 0){
+		// *match_counts = (int*)(malloc(sizeof(int)*num_patterns));
+		// (*matches) = (int*)(malloc(sizeof(int)*total));
+		
+		// vector<vector<int>> Match_bufer(num_patterns);
+		
+		//Checking the gathered result
+
+		/////////////TESTING////////////////////////
+
+		// for (int i = 0; i < total_processes; ++i){
+		// 	cout<<data_in_each_process[i]<<" ";
+		// }
+		// cout<<"\n";
+		// int count_1 =0;
+		// for (int i = 0; i < num_patterns; ++i){
+		// 	count_1 += (*match_counts)[i];
+		// 	cout<<(*match_counts)[i]<<" ";
+		// }
+		// cout<<"\n";
+		
+		// for (int i = 0; i < size_of_matches; ++i){
+		// 	cout<<(*matches)[i]<<" ";
+		// }
+		// cout<<"\n";
+		// cout<<"Count 2 "<<size_of_matches;
+		// cout<<"Count 1 "<< count_1;
+		////////////TESTING OVER//////////////////
+
+
+
+
+		// int* to_send_local_matches = (int*)(malloc(sizeof(int)*()));
+		// for(int i = 0; i<local_matches.size(); i++){
+		// 	m_count[i] = get<0>(local_matches[i]);
+		// }
+
+		//////////////////////////////////
+		// int k = 0;
+		// for (int i = 0; i < num_patterns; ++i){
+		// 	for (int j = 0; j < Match_bufer[i].size(); ++j){
+		// 		(*matches)[k] = Match_bufer[i][j];
+		// 		k++;
+		// 	}
+		// }
+
+		
+
+
+	// }
+	
+	
+	
 }
